@@ -1,0 +1,96 @@
+# =============================================================================
+# Single source of truth for the study. Every script imports this file rather
+# than hardcoding constants, so a change here propagates everywhere.
+# =============================================================================
+
+model:
+  name: "meta-llama/Llama-3.2-3B"
+  dtype: "float16"          # used when load_in_4bit is false
+  load_in_4bit: true         # set false if you have >8GB VRAM to spare
+  # NOTE: 4-bit quantization (bitsandbytes) is NOT compatible with
+  # TransformerLens's HookedTransformer activation caching. If you need
+  # run_with_cache() for probing/steering, you MUST set this to false and
+  # accept the higher VRAM cost, or run extraction on a bigger machine.
+  device: "cuda"
+  seed: 42
+
+paths:
+  data_raw: "data/raw"
+  data_processed: "data/processed"
+  data_activations: "data/activations"
+  results: "results"
+  logs: "logs"
+
+# ---------------------------------------------------------------------------
+# Phase 1: static probing (does the model represent user affect at all?)
+# ---------------------------------------------------------------------------
+phase1:
+  affect_categories:
+    - grief
+    - anxiety
+    - anger
+    - loneliness
+    - shame
+    - neutral        # control category, no distress signal present
+
+  # How directly the user's distress is signaled in the conversation.
+  # This is the independent variable that lets us test whether the model
+  # is doing keyword-matching vs. genuine inference from indirect cues.
+  cue_directness_levels:
+    - explicit        # user states the emotion outright ("I'm so anxious")
+    - implicit        # emotion is inferable from situation/behavior only
+    - contextual       # emotion only emerges over multiple turns
+
+  conversations_per_cell: 40   # affect_category x cue_directness_level
+  turns_per_conversation: [4, 8]   # min, max
+
+  # Layers to probe. Llama-3.2-3B has 28 transformer layers (0-indexed 0-27).
+  layers_to_probe: "all"       # or an explicit list, e.g. [8, 12, 16, 20, 24]
+
+  probe:
+    type: "logistic_regression"
+    cv_folds: 5
+    penalty: "l2"
+    C: 1.0
+    class_weight: "balanced"
+
+  significance:
+    n_permutations: 1000
+    alpha: 0.05
+    multiple_comparisons_correction: "holm-bonferroni"
+
+  controls:
+    lexical_scramble: true      # shuffle word order, preserve vocabulary
+    cue_generalization: true    # train on some cue types, test on held-out ones
+
+# ---------------------------------------------------------------------------
+# Phase 2: dynamic tracking (does a hypothesized "goal" representation
+# persist / update coherently across turns, the way a goal should?)
+# ---------------------------------------------------------------------------
+phase2:
+  switch_conditions:
+    - explicit_switch     # user states the affect change outright
+    - implicit_switch     # affect change only inferable from content/tone
+    - resolved            # distress explicitly resolved ("I feel better now")
+    - unresolved          # distress persists/is not addressed
+
+  conversations_per_condition: 30
+  pre_switch_turns: [2, 4]
+  post_switch_turns: [2, 4]
+
+  metrics:
+    - update_latency        # turns until probe output reflects the switch
+    - persistence            # does the representation persist without cues
+    - resolution_sensitivity # does it drop off when distress is resolved
+
+# ---------------------------------------------------------------------------
+# Phase 3 is out of scope for this codebase (needs a 27B+ model and
+# infrastructure beyond a single 8GB laptop GPU). Config left here as a
+# placeholder / forward reference only — no code in this repo reads it yet.
+# ---------------------------------------------------------------------------
+phase3:
+  note: >
+    Requires contrastive-direction extraction, temporal-precedence testing,
+    causal ablation/amplification, NLA verbalization, and a mandatory
+    independent corroboration step. See research_proposal.docx Section 4.8.
+  model_name_placeholder: "meta-llama/Llama-3-27B"  # or larger

@@ -1,0 +1,25 @@
+# torch is NOT listed here — install it separately with the wheel that
+# matches your CUDA version (see README "Setup" section), e.g.:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+transformer-lens>=1.17.0
+transformers>=4.44.0
+accelerate>=0.33.0
+bitsandbytes>=0.43.0        # needed for 4-bit loading on 8GB cards
+huggingface-hub>=0.24.0
+
+anthropic>=0.34.0           # Phase 1/2 synthetic conversation generation
+
+scikit-learn>=1.5.0         # logistic-regression probes
+numpy>=1.26.0
+pandas>=2.2.0
+scipy>=1.13.0                # permutation tests
+
+pyyaml>=6.0.1
+python-dotenv>=1.0.1
+tqdm>=4.66.0
+
+matplotlib>=3.9.0
+seaborn>=0.13.0
+
+pytest>=8.3.0

@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Virtual env
+venv/
+.venv/
+env/
+
+# Env vars / secrets
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data / results / logs (keep folder structure, not contents)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/activations/*
+!data/activations/.gitkeep
+results/*
+!results/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# OS
+.DS_Store
